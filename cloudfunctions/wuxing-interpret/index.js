@@ -42,7 +42,10 @@ exports.main = async (event, context) => {
       };
     }
 
+    console.log('开始调用MiniMax API...');
     const result = await callMiniMaxAPI(prompt, apiKey);
+    console.log('MiniMax API调用成功');
+
     return {
       success: true,
       data: parseWuxingResult(result)
@@ -59,7 +62,7 @@ exports.main = async (event, context) => {
 function callMiniMaxAPI(prompt, apiKey) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify({
-      model: 'abab6-chat',
+      model: 'abab5.5-chat',
       messages: [
         { role: 'user', content: prompt }
       ]
@@ -83,6 +86,10 @@ function callMiniMaxAPI(prompt, apiKey) {
       res.on('end', () => {
         try {
           const response = JSON.parse(body);
+          if (response.error) {
+            reject(new Error(response.error.message || 'API错误'));
+            return;
+          }
           resolve(response.choices?.[0]?.message?.content || '');
         } catch (e) {
           reject(e);
@@ -97,6 +104,14 @@ function callMiniMaxAPI(prompt, apiKey) {
 }
 
 function parseWuxingResult(content) {
+  if (!content) {
+    return {
+      destiny: '暂无分析',
+      fortune: '暂无分析',
+      suggestions: '暂无分析'
+    };
+  }
+
   const result = {
     destiny: '',
     fortune: '',

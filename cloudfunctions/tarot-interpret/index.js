@@ -51,7 +51,10 @@ ${cardsInfo}
       };
     }
 
+    console.log('开始调用MiniMax API...');
     const result = await callMiniMaxAPI(prompt, apiKey);
+    console.log('MiniMax API调用成功');
+
     return {
       success: true,
       data: parseTarotResult(result, cards)
@@ -68,7 +71,7 @@ ${cardsInfo}
 function callMiniMaxAPI(prompt, apiKey) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify({
-      model: 'abab6-chat',
+      model: 'abab5.5-chat',
       messages: [
         { role: 'user', content: prompt }
       ]
@@ -92,6 +95,10 @@ function callMiniMaxAPI(prompt, apiKey) {
       res.on('end', () => {
         try {
           const response = JSON.parse(body);
+          if (response.error) {
+            reject(new Error(response.error.message || 'API错误'));
+            return;
+          }
           resolve(response.choices?.[0]?.message?.content || '');
         } catch (e) {
           reject(e);
@@ -106,6 +113,15 @@ function callMiniMaxAPI(prompt, apiKey) {
 }
 
 function parseTarotResult(content, cards) {
+  if (!content) {
+    return {
+      past: '暂无解读',
+      present: '暂无解读',
+      future: '暂无解读',
+      overall: '暂无解读'
+    };
+  }
+
   const result = {
     past: '',
     present: '',

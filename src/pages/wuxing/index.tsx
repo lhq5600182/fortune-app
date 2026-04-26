@@ -1,7 +1,6 @@
 import { View, Text, Picker } from '@tarojs/components';
 import { useState } from 'react';
 import { useRouter } from '@tarojs/taro';
-import Taro from '@tarojs/taro';
 import ConstellationBackground from '../../components/ConstellationBackground';
 import './index.css';
 
@@ -40,11 +39,11 @@ const elementInfo: Record<string, { desc: string; lucky: string[]; avoid: string
   },
 };
 
-interface AIResult {
-  destiny: string;
-  fortune: string;
-  suggestions: string;
-}
+const mockAIResult = {
+  destiny: '根据您的生辰信息分析，您天生具有独特的气质和潜能。五行流转中蕴含着丰富的生命能量，让您在人群中显得与众不同。您天生具有洞察力和感知力，能够敏锐地捕捉到生活中的细微变化。',
+  fortune: '近期流年运势显示，您正处于一个上升期。无论是事业还是感情，都有机会迎来新的突破。但需要注意的是，机遇与挑战并存，需要以平和的心态面对生活中的变化。',
+  suggestions: '建议您多接触与您五行相生的元素，比如多去大自然中走走，或者接触一些木属性的事物。在颜色选择上，可以多尝试绿色、青色系。数字方面，3和8对您较为有利。',
+};
 
 export default function Wuxing() {
   const router = useRouter();
@@ -54,9 +53,8 @@ export default function Wuxing() {
   const [hour, setHour] = useState('0时');
   const [hasCalculated, setHasCalculated] = useState(false);
   const [result, setResult] = useState<{ elements: string[]; mainElement: string } | null>(null);
-  const [aiResult, setAiResult] = useState<AIResult | null>(null);
+  const [aiResult, setAiResult] = useState<typeof mockAIResult | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState('');
 
   const handleCalculate = () => {
     const yearNum = parseInt(year);
@@ -75,44 +73,11 @@ export default function Wuxing() {
     const calcResult = { elements, mainElement };
     setResult(calcResult);
     setHasCalculated(true);
-    fetchAIInterpretation(yearNum, monthNum, dayNum, hourNum, mainElement, elements);
-  };
-
-  const fetchAIInterpretation = async (
-    yearNum: number,
-    monthNum: number,
-    dayNum: number,
-    hourNum: number,
-    mainElement: string,
-    elements: string[]
-  ) => {
     setAiLoading(true);
-    setAiError('');
-
-    try {
-      const res = await Taro.cloud.callFunction({
-        name: 'wuxing-interpret',
-        data: {
-          year: yearNum,
-          month: monthNum,
-          day: dayNum,
-          hour: hourNum,
-          mainElement,
-          elements,
-        },
-      }) as any;
-
-      if (res.result?.success) {
-        setAiResult(res.result.data);
-      } else {
-        setAiError(res.result?.error || 'AI解读服务繁忙，请稍后再试');
-      }
-    } catch (err) {
-      console.error('五行AI调用失败:', err);
-      setAiError('AI解读服务繁忙，请稍后再试');
-    } finally {
+    setTimeout(() => {
+      setAiResult(mockAIResult);
       setAiLoading(false);
-    }
+    }, 1500);
   };
 
   const getBazi = () => {
@@ -127,7 +92,6 @@ export default function Wuxing() {
     setHasCalculated(false);
     setResult(null);
     setAiResult(null);
-    setAiError('');
   };
 
   return (
@@ -260,34 +224,24 @@ export default function Wuxing() {
                   <Text className="ai-text loading">正在获取AI解读，请稍候...</Text>
                 )}
 
-                {aiError && (
-                  <Text className="ai-text">{aiError}</Text>
-                )}
-
                 {aiResult && (
                   <>
-                    {aiResult.destiny && (
-                      <View className="ai-subsection">
-                        <Text className="ai-subsection-title">命理基础分析</Text>
-                        <Text className="ai-text">{aiResult.destiny}</Text>
-                      </View>
-                    )}
-                    {aiResult.fortune && (
-                      <View className="ai-subsection">
-                        <Text className="ai-subsection-title">流年运势</Text>
-                        <Text className="ai-text">{aiResult.fortune}</Text>
-                      </View>
-                    )}
-                    {aiResult.suggestions && (
-                      <View className="ai-subsection">
-                        <Text className="ai-subsection-title">调整建议</Text>
-                        <Text className="ai-text">{aiResult.suggestions}</Text>
-                      </View>
-                    )}
+                    <View className="ai-subsection">
+                      <Text className="ai-subsection-title">命理基础分析</Text>
+                      <Text className="ai-text">{aiResult.destiny}</Text>
+                    </View>
+                    <View className="ai-subsection">
+                      <Text className="ai-subsection-title">流年运势</Text>
+                      <Text className="ai-text">{aiResult.fortune}</Text>
+                    </View>
+                    <View className="ai-subsection">
+                      <Text className="ai-subsection-title">调整建议</Text>
+                      <Text className="ai-text">{aiResult.suggestions}</Text>
+                    </View>
                   </>
                 )}
 
-                {!aiLoading && !aiError && !aiResult && (
+                {!aiLoading && !aiResult && (
                   <Text className="ai-text">
                     根据您的生辰八字推算，您命中{result?.mainElement}行旺盛。
                     这意味着您在人生旅途中将面临特定的机遇与挑战...

@@ -1,7 +1,6 @@
 import { View, Text } from '@tarojs/components';
 import { useState } from 'react';
 import { useRouter } from '@tarojs/taro';
-import Taro from '@tarojs/taro';
 import ConstellationBackground from '../../components/ConstellationBackground';
 import './index.css';
 
@@ -39,27 +38,25 @@ interface DrawnCard {
   isReversed: boolean;
 }
 
-interface AIResult {
-  past: string;
-  present: string;
-  future: string;
-  overall: string;
-}
+const mockAIResult = {
+  past: '过去的经历正在为你现在的决定奠定基础。那些曾经的选择和经历，虽然看似已经过去，但它们塑造了你的价值观和世界观，让你更加清晰地认识到自己真正想要的是什么。',
+  present: '目前你正处于一个关键的转折点。你拥有足够的能量和资源去应对当前的挑战，但需要注意的是不要被过去的阴影所束缚。现在是释放潜力、勇敢前行的时刻。',
+  future: '未来的道路正在逐渐清晰。尽管还有一些不确定因素，但只要你保持内心的平静和清晰，你就能抓住即将到来的机遇。相信自己的直觉，它会引导你走向正确的方向。',
+  overall: '整体而言，这是一个充满转变和成长机遇的时期。三张牌共同指向一个主题：放下过去的包袱，专注于当下的选择，为更美好的未来做准备。记住，命运掌握在你自己的手中。',
+};
 
 export default function Tarot() {
   const router = useRouter();
   const [drawnCards, setDrawnCards] = useState<DrawnCard[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [showResult, setShowResult] = useState(false);
-  const [aiResult, setAiResult] = useState<AIResult | null>(null);
+  const [aiResult, setAiResult] = useState<typeof mockAIResult | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState('');
 
   const drawCards = () => {
     setIsDrawing(true);
     setShowResult(false);
     setAiResult(null);
-    setAiError('');
 
     setTimeout(() => {
       const shuffled = [...tarotCards].sort(() => Math.random() - 0.5);
@@ -71,36 +68,16 @@ export default function Tarot() {
       setDrawnCards(drawn);
       setIsDrawing(false);
       setShowResult(true);
-      fetchAIInterpretation(drawn);
+      setAiLoading(true);
+      setTimeout(() => {
+        setAiResult(mockAIResult);
+        setAiLoading(false);
+      }, 1500);
     }, 1500);
-  };
-
-  const fetchAIInterpretation = async (cards: DrawnCard[]) => {
-    setAiLoading(true);
-    setAiError('');
-
-    try {
-      const res = await Taro.cloud.callFunction({
-        name: 'tarot-interpret',
-        data: { cards },
-      }) as any;
-
-      if (res.result?.success) {
-        setAiResult(res.result.data);
-      } else {
-        setAiError(res.result?.error || 'AI解读服务繁忙，请稍后再试');
-      }
-    } catch (err) {
-      console.error('塔罗AI调用失败:', err);
-      setAiError('AI解读服务繁忙，请稍后再试');
-    } finally {
-      setAiLoading(false);
-    }
   };
 
   const handleDrawAgain = () => {
     setAiResult(null);
-    setAiError('');
     drawCards();
   };
 
@@ -171,49 +148,32 @@ export default function Tarot() {
               </View>
             )}
 
-            {aiError && (
-              <View className="interpretations">
-                {drawnCards.map((card, index) => (
-                  <View key={index} className="interpretation-card">
-                    <View className="interp-header">
-                      <Text className="interp-title">{card.position} — {card.name}</Text>
-                    </View>
-                    <Text className="interp-meaning">{card.meaning}</Text>
-                    <View className="ai-interp">
-                      <Text className="ai-label">✨ AI解读</Text>
-                      <Text className="ai-text">{aiError}</Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
-
             {aiResult && (
-              <View className="interpretations">
-                {drawnCards.map((card, index) => (
-                  <View key={index} className="interpretation-card">
-                    <View className="interp-header">
-                      <Text className="interp-title">{card.position} — {card.name}</Text>
+              <>
+                <View className="interpretations">
+                  {drawnCards.map((card, index) => (
+                    <View key={index} className="interpretation-card">
+                      <View className="interp-header">
+                        <Text className="interp-title">{card.position} — {card.name}</Text>
+                      </View>
+                      <Text className="interp-meaning">{card.meaning}</Text>
+                      <View className="ai-interp">
+                        <Text className="ai-label">✨ AI解读</Text>
+                        <Text className="ai-text">{getPositionLabel(card.position)}</Text>
+                      </View>
                     </View>
-                    <Text className="interp-meaning">{card.meaning}</Text>
-                    <View className="ai-interp">
-                      <Text className="ai-label">✨ AI解读</Text>
-                      <Text className="ai-text">{getPositionLabel(card.position)}</Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
+                  ))}
+                </View>
 
-            {aiResult && aiResult.overall && (
-              <View className="interpretation-card overall">
-                <View className="interp-header">
-                  <Text className="interp-title">🌟 整体建议</Text>
+                <View className="interpretation-card overall">
+                  <View className="interp-header">
+                    <Text className="interp-title">🌟 整体建议</Text>
+                  </View>
+                  <View className="ai-interp">
+                    <Text className="ai-text">{aiResult.overall}</Text>
+                  </View>
                 </View>
-                <View className="ai-interp">
-                  <Text className="ai-text">{aiResult.overall}</Text>
-                </View>
-              </View>
+              </>
             )}
 
             <View className="vip-section">

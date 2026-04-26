@@ -44,9 +44,8 @@ const config = {
   h5: {
     publicPath: '/',
     staticDirectory: 'static',
-    prebundle: {
-      enable: false,
-    },
+    buildAdapter: 'h5',
+    outputRoot: 'dist-h5',
     postcss: {
       autoprefixer: {
         enable: true,

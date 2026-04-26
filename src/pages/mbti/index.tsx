@@ -1,7 +1,6 @@
 import { View, Text } from '@tarojs/components';
 import { useState } from 'react';
 import { useRouter } from '@tarojs/taro';
-import Taro from '@tarojs/taro';
 import ConstellationBackground from '../../components/ConstellationBackground';
 import './index.css';
 
@@ -91,21 +90,20 @@ const mbtiTypes = {
   'ESFP': { name: '表演者', desc: '活泼开朗，热爱社交，享受当下' },
 };
 
-interface AIResult {
-  personality: string;
-  career: string;
-  relationship: string;
-  growth: string;
-}
+const mockAIResult = {
+  personality: '你是一个深邃的思考者，拥有独特的思维方式和敏锐的洞察力。你善于从复杂的情况中抽丝剥茧，找到问题的本质。这种思维方式让你在处理问题时总是能够保持冷静和理性。',
+  career: '你适合从事需要深度思考和战略规划的工作。比如：咨询顾问、分析师、策划、作家、科研人员等。你的冷静和洞察力能让你在这些领域发挥所长。',
+  relationship: '你在人际关系中倾向于追求深度而非广度。你珍惜少数但真挚的关系，对于泛泛之交保持适当距离。理解你的人会发现你是一个值得信赖的朋友。',
+  growth: '建议你继续发挥你的思维优势，同时也要注意表达能力的培养。有时候将想法付诸文字或言语，与同样重要。可以尝试参加一些需要沟通协作的项目来提升这方面的能力。',
+};
 
 export default function MBTI() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
   const [result, setResult] = useState('');
-  const [aiResult, setAiResult] = useState<AIResult | null>(null);
+  const [aiResult, setAiResult] = useState<typeof mockAIResult | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState('');
 
   const handleAnswer = (value: string) => {
     const newAnswers = [...answers, value];
@@ -116,7 +114,11 @@ export default function MBTI() {
     } else {
       const mbti = calculateMBTI(newAnswers);
       setResult(mbti);
-      fetchAIInterpretation(mbti, newAnswers);
+      setAiLoading(true);
+      setTimeout(() => {
+        setAiResult(mockAIResult);
+        setAiLoading(false);
+      }, 1500);
     }
   };
 
@@ -133,37 +135,6 @@ export default function MBTI() {
     return type;
   };
 
-  const fetchAIInterpretation = async (mbtiType: string, userAnswers: string[]) => {
-    const typeInfo = mbtiTypes[mbtiType as keyof typeof mbtiTypes];
-    if (!typeInfo) return;
-
-    setAiLoading(true);
-    setAiError('');
-
-    try {
-      const res = await Taro.cloud.callFunction({
-        name: 'mbti-interpret',
-        data: {
-          mbtiType,
-          answers: userAnswers,
-          typeName: typeInfo.name,
-          typeDesc: typeInfo.desc,
-        },
-      }) as any;
-
-      if (res.result?.success) {
-        setAiResult(res.result.data);
-      } else {
-        setAiError(res.result?.error || 'AI解读服务繁忙，请稍后再试');
-      }
-    } catch (err) {
-      console.error('MBTI AI调用失败:', err);
-      setAiError('AI解读服务繁忙，请稍后再试');
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
   const getTypeInfo = () => {
     return mbtiTypes[result as keyof typeof mbtiTypes] || { name: '未知', desc: '无法确定类型' };
   };
@@ -173,7 +144,6 @@ export default function MBTI() {
     setAnswers([]);
     setResult('');
     setAiResult(null);
-    setAiError('');
   };
 
   return (
@@ -224,40 +194,25 @@ export default function MBTI() {
               </View>
             )}
 
-            {aiError && (
-              <View className="ai-analysis error">
-                <Text className="ai-title">✨ AI深度分析</Text>
-                <Text className="ai-text">{aiError}</Text>
-              </View>
-            )}
-
             {aiResult && (
               <View className="ai-analysis">
                 <Text className="ai-title">✨ AI深度分析</Text>
-                {aiResult.personality && (
-                  <View className="ai-section">
-                    <Text className="ai-section-title">性格深度解析</Text>
-                    <Text className="ai-text">{aiResult.personality}</Text>
-                  </View>
-                )}
-                {aiResult.career && (
-                  <View className="ai-section">
-                    <Text className="ai-section-title">职业发展规划</Text>
-                    <Text className="ai-text">{aiResult.career}</Text>
-                  </View>
-                )}
-                {aiResult.relationship && (
-                  <View className="ai-section">
-                    <Text className="ai-section-title">人际关系建议</Text>
-                    <Text className="ai-text">{aiResult.relationship}</Text>
-                  </View>
-                )}
-                {aiResult.growth && (
-                  <View className="ai-section">
-                    <Text className="ai-section-title">个人成长指南</Text>
-                    <Text className="ai-text">{aiResult.growth}</Text>
-                  </View>
-                )}
+                <View className="ai-section">
+                  <Text className="ai-section-title">性格深度解析</Text>
+                  <Text className="ai-text">{aiResult.personality}</Text>
+                </View>
+                <View className="ai-section">
+                  <Text className="ai-section-title">职业发展规划</Text>
+                  <Text className="ai-text">{aiResult.career}</Text>
+                </View>
+                <View className="ai-section">
+                  <Text className="ai-section-title">人际关系建议</Text>
+                  <Text className="ai-text">{aiResult.relationship}</Text>
+                </View>
+                <View className="ai-section">
+                  <Text className="ai-section-title">个人成长指南</Text>
+                  <Text className="ai-text">{aiResult.growth}</Text>
+                </View>
               </View>
             )}
 

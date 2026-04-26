@@ -35,7 +35,7 @@ exports.main = async (event, context) => {
 4. 个人成长指南
    潜在优势挖掘、潜在挑战、成长路径
 
-请用温暖、专业、有洞察力的语言进行分析，总字数约400-500字。`;
+请用温暖，专业、有洞察力的语言进行分析，总字数约400-500字。`;
 
   try {
     const apiKey = process.env.MINIMAX_API_KEY;
@@ -46,7 +46,10 @@ exports.main = async (event, context) => {
       };
     }
 
+    console.log('开始调用MiniMax API...');
     const result = await callMiniMaxAPI(prompt, apiKey);
+    console.log('MiniMax API调用成功');
+
     return {
       success: true,
       data: parseMBTIResult(result)
@@ -63,7 +66,7 @@ exports.main = async (event, context) => {
 function callMiniMaxAPI(prompt, apiKey) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify({
-      model: 'abab6-chat',
+      model: 'abab5.5-chat',
       messages: [
         { role: 'user', content: prompt }
       ]
@@ -81,26 +84,48 @@ function callMiniMaxAPI(prompt, apiKey) {
       }
     };
 
+    console.log('发送请求到MiniMax API...');
+
     const req = https.request(options, (res) => {
       let body = '';
       res.on('data', (chunk) => body += chunk);
       res.on('end', () => {
+        console.log('MiniMax响应状态:', res.statusCode);
+        console.log('MiniMax响应体:', body);
         try {
           const response = JSON.parse(body);
+          if (response.error) {
+            reject(new Error(response.error.message || 'API错误'));
+            return;
+          }
           resolve(response.choices?.[0]?.message?.content || '');
         } catch (e) {
+          console.error('解析响应失败:', e);
           reject(e);
         }
       });
     });
 
-    req.on('error', reject);
+    req.on('error', (err) => {
+      console.error('请求错误:', err);
+      reject(err);
+    });
+
     req.write(data);
     req.end();
   });
 }
 
 function parseMBTIResult(content) {
+  if (!content) {
+    return {
+      personality: '暂无分析结果',
+      career: '暂无分析结果',
+      relationship: '暂无分析结果',
+      growth: '暂无分析结果'
+    };
+  }
+
   const sections = {
     personality: '',
     career: '',
