@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "MBTI人格测试",
+  "navigationBarBackgroundColor": "#0f0f1a",
+  "navigationBarTextStyle": "white",
+  "backgroundTextStyle": "dark",
+  "enablePullDownRefresh": false
+}

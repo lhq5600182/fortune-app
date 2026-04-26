@@ -28,6 +28,13 @@
 - 流星闪烁效果
 - 响应式间距调整
 
+### 4. 微信小程序合规性修复
+- 添加 `sitemap.json` 配置
+- 为每个页面添加 `index.json` 页面配置
+- 完善 `app.config.ts` 全局配置（permission、networkTimeout）
+- 页面独立标题（MBTI人格测试/塔罗占卜/五行八字）
+- 配置 Taro copy 规则确保 sitemap.json 正确输出
+
 ## 待完成功能
 
 ### 高优先级
