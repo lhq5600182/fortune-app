@@ -1,0 +1,7 @@
+{
+  "name": "wuxing-interpret",
+  "version": "1.0.0",
+  "description": "五行八字AI命理分析云函数",
+  "main": "index.js",
+  "dependencies": {}
+}

@@ -331,3 +331,24 @@
   font-size: 15px;
   color: rgba(255, 255, 255, 0.5);
 }
+
+.ai-subsection {
+  margin-bottom: 16px;
+}
+
+.ai-subsection:last-child {
+  margin-bottom: 0;
+}
+
+.ai-subsection-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #667eea;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.ai-text.loading {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}

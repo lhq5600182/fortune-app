@@ -1,6 +1,7 @@
 import { View, Text } from '@tarojs/components';
 import { useState } from 'react';
 import { useRouter } from '@tarojs/taro';
+import Taro from '@tarojs/taro';
 import ConstellationBackground from '../../components/ConstellationBackground';
 import './index.css';
 
@@ -29,15 +30,36 @@ const tarotCards = [
   { id: 21, name: '世界', image: '🌍', meaning: '完成、成就、圆满' },
 ];
 
+interface DrawnCard {
+  id: number;
+  name: string;
+  image: string;
+  meaning: string;
+  position: string;
+  isReversed: boolean;
+}
+
+interface AIResult {
+  past: string;
+  present: string;
+  future: string;
+  overall: string;
+}
+
 export default function Tarot() {
   const router = useRouter();
-  const [drawnCards, setDrawnCards] = useState<typeof tarotCards>([]);
+  const [drawnCards, setDrawnCards] = useState<DrawnCard[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [aiResult, setAiResult] = useState<AIResult | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
 
   const drawCards = () => {
     setIsDrawing(true);
     setShowResult(false);
+    setAiResult(null);
+    setAiError('');
 
     setTimeout(() => {
       const shuffled = [...tarotCards].sort(() => Math.random() - 0.5);
@@ -49,13 +71,44 @@ export default function Tarot() {
       setDrawnCards(drawn);
       setIsDrawing(false);
       setShowResult(true);
+      fetchAIInterpretation(drawn);
     }, 1500);
   };
 
-  const getAiInterpretation = (card: typeof tarotCards[0], position: string, isReversed: boolean) => {
-    const prefix = isReversed ? '逆位：' : '正位：';
-    const positionDesc = position === '过去' ? '过去的经历' : position === '现在' ? '当前的状态' : '未来的走向';
-    return `${positionDesc}的${card.name}牌${prefix}${card.meaning}，暗示着你在这个人生阶段需要...`;
+  const fetchAIInterpretation = async (cards: DrawnCard[]) => {
+    setAiLoading(true);
+    setAiError('');
+
+    try {
+      const res = await Taro.cloud.callFunction({
+        name: 'tarot-interpret',
+        data: { cards },
+      }) as any;
+
+      if (res.result?.success) {
+        setAiResult(res.result.data);
+      } else {
+        setAiError(res.result?.error || 'AI解读服务繁忙，请稍后再试');
+      }
+    } catch (err) {
+      console.error('塔罗AI调用失败:', err);
+      setAiError('AI解读服务繁忙，请稍后再试');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleDrawAgain = () => {
+    setAiResult(null);
+    setAiError('');
+    drawCards();
+  };
+
+  const getPositionLabel = (position: string) => {
+    if (position === '过去') return aiResult?.past || '';
+    if (position === '现在') return aiResult?.present || '';
+    if (position === '未来') return aiResult?.future || '';
+    return '';
   };
 
   return (
@@ -107,22 +160,61 @@ export default function Tarot() {
               ))}
             </View>
 
-            <View className="interpretations">
-              {drawnCards.map((card, index) => (
-                <View key={index} className="interpretation-card">
+            {aiLoading && (
+              <View className="interpretations">
+                <View className="interpretation-card">
                   <View className="interp-header">
-                    <Text className="interp-title">{card.position} — {card.name}</Text>
+                    <Text className="interp-title">✨ AI解读生成中</Text>
                   </View>
-                  <Text className="interp-meaning">{card.meaning}</Text>
-                  <View className="ai-interp">
-                    <Text className="ai-label">✨ AI解读</Text>
-                    <Text className="ai-text">
-                      {getAiInterpretation(card, card.position, card.isReversed)}
-                    </Text>
-                  </View>
+                  <Text className="ai-text loading">命运之牌正在被解读，请稍候...</Text>
                 </View>
-              ))}
-            </View>
+              </View>
+            )}
+
+            {aiError && (
+              <View className="interpretations">
+                {drawnCards.map((card, index) => (
+                  <View key={index} className="interpretation-card">
+                    <View className="interp-header">
+                      <Text className="interp-title">{card.position} — {card.name}</Text>
+                    </View>
+                    <Text className="interp-meaning">{card.meaning}</Text>
+                    <View className="ai-interp">
+                      <Text className="ai-label">✨ AI解读</Text>
+                      <Text className="ai-text">{aiError}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {aiResult && (
+              <View className="interpretations">
+                {drawnCards.map((card, index) => (
+                  <View key={index} className="interpretation-card">
+                    <View className="interp-header">
+                      <Text className="interp-title">{card.position} — {card.name}</Text>
+                    </View>
+                    <Text className="interp-meaning">{card.meaning}</Text>
+                    <View className="ai-interp">
+                      <Text className="ai-label">✨ AI解读</Text>
+                      <Text className="ai-text">{getPositionLabel(card.position)}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {aiResult && aiResult.overall && (
+              <View className="interpretation-card overall">
+                <View className="interp-header">
+                  <Text className="interp-title">🌟 整体建议</Text>
+                </View>
+                <View className="ai-interp">
+                  <Text className="ai-text">{aiResult.overall}</Text>
+                </View>
+              </View>
+            )}
 
             <View className="vip-section">
               <View className="vip-card">
@@ -135,7 +227,7 @@ export default function Tarot() {
             </View>
 
             <View className="action-buttons">
-              <View className="draw-again-btn" onClick={drawCards}>
+              <View className="draw-again-btn" onClick={handleDrawAgain}>
                 <Text className="draw-again-text">再次占卜</Text>
               </View>
               <View className="back-btn" onClick={() => router.back()}>

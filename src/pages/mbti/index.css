@@ -168,3 +168,31 @@
   padding: 16px 20px;
   cursor: pointer;
 }
+
+.ai-section {
+  margin-top: 20px;
+}
+
+.ai-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #667eea;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.ai-analysis .ai-text {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.7;
+}
+
+.ai-analysis .ai-text.loading {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
+.ai-analysis.error {
+  background: rgba(245, 87, 108, 0.15);
+  border: 1px solid rgba(245, 87, 108, 0.3);
+}

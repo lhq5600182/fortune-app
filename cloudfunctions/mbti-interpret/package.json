@@ -1,0 +1,7 @@
+{
+  "name": "mbti-interpret",
+  "version": "1.0.0",
+  "description": "MBTI人格测试AI深度解读云函数",
+  "main": "index.js",
+  "dependencies": {}
+}

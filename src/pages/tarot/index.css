@@ -306,3 +306,14 @@
   font-size: 15px;
   color: rgba(255, 255, 255, 0.5);
 }
+
+.interpretation-card.overall {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.25) 0%, rgba(118, 75, 162, 0.2) 100%);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  margin-top: 20px;
+}
+
+.interpretations .ai-text.loading {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}

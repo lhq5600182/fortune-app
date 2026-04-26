@@ -1,6 +1,7 @@
 import { View, Text, Picker } from '@tarojs/components';
 import { useState } from 'react';
 import { useRouter } from '@tarojs/taro';
+import Taro from '@tarojs/taro';
 import ConstellationBackground from '../../components/ConstellationBackground';
 import './index.css';
 
@@ -39,6 +40,12 @@ const elementInfo: Record<string, { desc: string; lucky: string[]; avoid: string
   },
 };
 
+interface AIResult {
+  destiny: string;
+  fortune: string;
+  suggestions: string;
+}
+
 export default function Wuxing() {
   const router = useRouter();
   const [year, setYear] = useState('2000年');
@@ -47,6 +54,9 @@ export default function Wuxing() {
   const [hour, setHour] = useState('0时');
   const [hasCalculated, setHasCalculated] = useState(false);
   const [result, setResult] = useState<{ elements: string[]; mainElement: string } | null>(null);
+  const [aiResult, setAiResult] = useState<AIResult | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
 
   const handleCalculate = () => {
     const yearNum = parseInt(year);
@@ -62,8 +72,47 @@ export default function Wuxing() {
     const shuffled = otherElements.sort(() => Math.random() - 0.5);
     elements.push(...shuffled.slice(0, 2));
 
-    setResult({ elements, mainElement });
+    const calcResult = { elements, mainElement };
+    setResult(calcResult);
     setHasCalculated(true);
+    fetchAIInterpretation(yearNum, monthNum, dayNum, hourNum, mainElement, elements);
+  };
+
+  const fetchAIInterpretation = async (
+    yearNum: number,
+    monthNum: number,
+    dayNum: number,
+    hourNum: number,
+    mainElement: string,
+    elements: string[]
+  ) => {
+    setAiLoading(true);
+    setAiError('');
+
+    try {
+      const res = await Taro.cloud.callFunction({
+        name: 'wuxing-interpret',
+        data: {
+          year: yearNum,
+          month: monthNum,
+          day: dayNum,
+          hour: hourNum,
+          mainElement,
+          elements,
+        },
+      }) as any;
+
+      if (res.result?.success) {
+        setAiResult(res.result.data);
+      } else {
+        setAiError(res.result?.error || 'AI解读服务繁忙，请稍后再试');
+      }
+    } catch (err) {
+      console.error('五行AI调用失败:', err);
+      setAiError('AI解读服务繁忙，请稍后再试');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const getBazi = () => {
@@ -72,6 +121,13 @@ export default function Wuxing() {
     const dayNum = parseInt(day);
     const hourNum = parseInt(hour);
     return { year: yearNum, month: monthNum, day: dayNum, hour: hourNum };
+  };
+
+  const handleRecalculate = () => {
+    setHasCalculated(false);
+    setResult(null);
+    setAiResult(null);
+    setAiError('');
   };
 
   return (
@@ -199,10 +255,44 @@ export default function Wuxing() {
             <View className="ai-section">
               <View className="ai-card">
                 <Text className="ai-title">✨ AI命理分析</Text>
-                <Text className="ai-text">
-                  根据您的生辰八字推算，您命中{result?.mainElement}行旺盛。
-                  这意味着您在人生旅途中将面临特定的机遇与挑战...
-                </Text>
+
+                {aiLoading && (
+                  <Text className="ai-text loading">正在获取AI解读，请稍候...</Text>
+                )}
+
+                {aiError && (
+                  <Text className="ai-text">{aiError}</Text>
+                )}
+
+                {aiResult && (
+                  <>
+                    {aiResult.destiny && (
+                      <View className="ai-subsection">
+                        <Text className="ai-subsection-title">命理基础分析</Text>
+                        <Text className="ai-text">{aiResult.destiny}</Text>
+                      </View>
+                    )}
+                    {aiResult.fortune && (
+                      <View className="ai-subsection">
+                        <Text className="ai-subsection-title">流年运势</Text>
+                        <Text className="ai-text">{aiResult.fortune}</Text>
+                      </View>
+                    )}
+                    {aiResult.suggestions && (
+                      <View className="ai-subsection">
+                        <Text className="ai-subsection-title">调整建议</Text>
+                        <Text className="ai-text">{aiResult.suggestions}</Text>
+                      </View>
+                    )}
+                  </>
+                )}
+
+                {!aiLoading && !aiError && !aiResult && (
+                  <Text className="ai-text">
+                    根据您的生辰八字推算，您命中{result?.mainElement}行旺盛。
+                    这意味着您在人生旅途中将面临特定的机遇与挑战...
+                  </Text>
+                )}
               </View>
             </View>
 
@@ -211,7 +301,7 @@ export default function Wuxing() {
             </View>
 
             <View className="action-buttons">
-              <View className="recalculate-btn" onClick={() => setHasCalculated(false)}>
+              <View className="recalculate-btn" onClick={handleRecalculate}>
                 <Text className="recalculate-text">重新测算</Text>
               </View>
               <View className="back-btn" onClick={() => router.back()}>

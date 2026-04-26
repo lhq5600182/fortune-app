@@ -1,6 +1,7 @@
 import { View, Text } from '@tarojs/components';
 import { useState } from 'react';
 import { useRouter } from '@tarojs/taro';
+import Taro from '@tarojs/taro';
 import ConstellationBackground from '../../components/ConstellationBackground';
 import './index.css';
 
@@ -90,11 +91,21 @@ const mbtiTypes = {
   'ESFP': { name: '表演者', desc: '活泼开朗，热爱社交，享受当下' },
 };
 
+interface AIResult {
+  personality: string;
+  career: string;
+  relationship: string;
+  growth: string;
+}
+
 export default function MBTI() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
   const [result, setResult] = useState('');
+  const [aiResult, setAiResult] = useState<AIResult | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
 
   const handleAnswer = (value: string) => {
     const newAnswers = [...answers, value];
@@ -105,6 +116,7 @@ export default function MBTI() {
     } else {
       const mbti = calculateMBTI(newAnswers);
       setResult(mbti);
+      fetchAIInterpretation(mbti, newAnswers);
     }
   };
 
@@ -121,6 +133,37 @@ export default function MBTI() {
     return type;
   };
 
+  const fetchAIInterpretation = async (mbtiType: string, userAnswers: string[]) => {
+    const typeInfo = mbtiTypes[mbtiType as keyof typeof mbtiTypes];
+    if (!typeInfo) return;
+
+    setAiLoading(true);
+    setAiError('');
+
+    try {
+      const res = await Taro.cloud.callFunction({
+        name: 'mbti-interpret',
+        data: {
+          mbtiType,
+          answers: userAnswers,
+          typeName: typeInfo.name,
+          typeDesc: typeInfo.desc,
+        },
+      }) as any;
+
+      if (res.result?.success) {
+        setAiResult(res.result.data);
+      } else {
+        setAiError(res.result?.error || 'AI解读服务繁忙，请稍后再试');
+      }
+    } catch (err) {
+      console.error('MBTI AI调用失败:', err);
+      setAiError('AI解读服务繁忙，请稍后再试');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const getTypeInfo = () => {
     return mbtiTypes[result as keyof typeof mbtiTypes] || { name: '未知', desc: '无法确定类型' };
   };
@@ -129,6 +172,8 @@ export default function MBTI() {
     setStep(0);
     setAnswers([]);
     setResult('');
+    setAiResult(null);
+    setAiError('');
   };
 
   return (
@@ -171,13 +216,51 @@ export default function MBTI() {
               <Text className="result-name">{getTypeInfo().name}</Text>
             </View>
             <Text className="result-desc">{getTypeInfo().desc}</Text>
-            <View className="ai-analysis">
-              <Text className="ai-title">✨ AI深度分析</Text>
-              <Text className="ai-text">
-                你是{getTypeInfo().name}，这意味着你拥有独特的思维方式和行为模式。
-                你的性格特质让你在某些领域具有天然的优势...
-              </Text>
-            </View>
+
+            {aiLoading && (
+              <View className="ai-analysis">
+                <Text className="ai-title">✨ AI深度分析</Text>
+                <Text className="ai-text loading">正在获取AI解读，请稍候...</Text>
+              </View>
+            )}
+
+            {aiError && (
+              <View className="ai-analysis error">
+                <Text className="ai-title">✨ AI深度分析</Text>
+                <Text className="ai-text">{aiError}</Text>
+              </View>
+            )}
+
+            {aiResult && (
+              <View className="ai-analysis">
+                <Text className="ai-title">✨ AI深度分析</Text>
+                {aiResult.personality && (
+                  <View className="ai-section">
+                    <Text className="ai-section-title">性格深度解析</Text>
+                    <Text className="ai-text">{aiResult.personality}</Text>
+                  </View>
+                )}
+                {aiResult.career && (
+                  <View className="ai-section">
+                    <Text className="ai-section-title">职业发展规划</Text>
+                    <Text className="ai-text">{aiResult.career}</Text>
+                  </View>
+                )}
+                {aiResult.relationship && (
+                  <View className="ai-section">
+                    <Text className="ai-section-title">人际关系建议</Text>
+                    <Text className="ai-text">{aiResult.relationship}</Text>
+                  </View>
+                )}
+                {aiResult.growth && (
+                  <View className="ai-section">
+                    <Text className="ai-section-title">个人成长指南</Text>
+                    <Text className="ai-text">{aiResult.growth}</Text>
+                  </View>
+                )}
+              </View>
+            )}
+
             <View className="result-actions">
               <View className="btn-primary" onClick={() => router.back()}>返回首页</View>
               <View className="btn-secondary" onClick={handleRetest}>重新测试</View>

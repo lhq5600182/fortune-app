@@ -1,0 +1,7 @@
+{
+  "name": "tarot-interpret",
+  "version": "1.0.0",
+  "description": "塔罗牌占卜AI解读云函数",
+  "main": "index.js",
+  "dependencies": {}
+}
