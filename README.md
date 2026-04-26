@@ -12,8 +12,8 @@
 
 - Taro 4.x + React
 - TypeScript
-- MiniMax AI API（待接入）
-- 微信云开发（待接入）
+- MiniMax AI API（已接入）
+- 微信云开发（已接入）
 
 ## 开发
 
@@ -32,7 +32,7 @@ npm run build:weapp # 构建生产版本
 
 ## 待完成功能
 
-- [ ] MiniMax AI API接入
+- [x] MiniMax AI API接入
 - [ ] 微信支付功能（¥9.9高级会员）
 - [ ] 用户登录与数据存储
 - [ ] 每日免费次数限制逻辑

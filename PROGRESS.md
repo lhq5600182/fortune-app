@@ -35,12 +35,20 @@
 - 页面独立标题（MBTI人格测试/塔罗占卜/五行八字）
 - 配置 Taro copy 规则确保 sitemap.json 正确输出
 
+### 5. MiniMax AI API接入
+- 创建三个云函数：mbti-interpret、tarot-interpret、wuxing-interpret
+- 每个云函数使用独立prompt进行AI解读
+- 前端集成云函数调用，替换静态占位文本
+- 添加loading状态和错误处理
+- 设计文档：`docs/superpowers/specs/2026-04-26-minimax-ai-design.md`
+- 实现计划：`docs/superpowers/plans/2026-04-26-minimax-ai-implementation-plan.md`
+
+**注意**：云函数需要在微信开发者工具中上传并部署到云开发环境，同时配置 `MINIMAX_API_KEY` 环境变量。
+
 ## 待完成功能
 
 ### 高优先级
-1. **MiniMax AI API接入**
-   - 需要申请MiniMax API密钥
-   - 在云函数中调用AI解读
+1. ~~**MiniMax AI API接入**~~ ✅ 已完成（代码层面）
 
 2. **微信支付功能**
    - 高级会员 ¥9.9 解锁
